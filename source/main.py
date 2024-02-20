@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from lexer.lex import lex
+
 
 TEST_FILE = Path(__file__).parents[1] / 'data' / 'test.ter'
 
