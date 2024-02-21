@@ -1,5 +1,3 @@
-
-
 class Scanner:
     _consumed_count: int
     _text: str

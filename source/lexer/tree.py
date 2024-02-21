@@ -1,45 +1,5 @@
-from dataclasses import dataclass
-from enum import Enum
-
+from tokens import TokenType
 from .scanner import Scanner
-
-
-class TokenType(Enum):
-    pass
-
-
-class GenericTokenType(TokenType):
-    NUMBER = '0-9'
-    IDENTIFIER = 'a-Z'
-
-    # whitespace
-    EOF = 'eof'
-    NEW_LINE = r'\n'
-
-
-class SymbolTokenType(TokenType):
-    # math
-    PLUS = '+'
-    MINUS = '-'
-
-    # comp
-    STRICT_LESS = '<'
-    EQUAL_LESS = '<='
-
-    # io
-    OUTPUT = '<<'
-
-
-@dataclass(frozen=True)
-class Token:
-    type: TokenType
-    text: str
-
-    def __repr__(self):
-        return f'Token | {self}'
-
-    def __str__(self):
-        return self.type.name + ' ' + self.text.replace('\n', r'\n')
 
 
 class TokenTypeTree:
@@ -50,12 +10,12 @@ class TokenTypeTree:
         self.token_type = None
         sub_dict_prep = {}
         for tt in tts:
-            if len(tt.value) == depth:
+            if len(tt.symbol) == depth:
                 # tts share suffix -> here at most once
                 assert not self.token_type
                 self.token_type = tt
             else:
-                sub_dict_prep.setdefault(tt.value[depth], []).append(tt)
+                sub_dict_prep.setdefault(tt.symbol[depth], []).append(tt)
         self.sub_dict = {
             char: TokenTypeTree(sub_tts, depth + 1)
             for char, sub_tts in sub_dict_prep.items()
