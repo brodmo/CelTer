@@ -1,5 +1,5 @@
 from tokens import TokenType
-from .scanner import Scanner
+from scanner import Scanner
 
 
 class TokenTypeTree:
@@ -22,7 +22,7 @@ class TokenTypeTree:
         }  # sub_dict_prep ! fst -> TokenTypeTree[snd, depth + 1] ` Map
 
     def walk(self, scanner: Scanner) -> TokenType:
-        if scanner.char in self.sub_dict:
+        if scanner.peek in self.sub_dict:
             return self.sub_dict[scanner.consume()].walk(scanner)
         assert self.token_type
         return self.token_type

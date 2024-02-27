@@ -3,8 +3,6 @@ from enum import Enum, auto
 
 
 class TokenType(Enum):
-    symbol: str | None
-
     def __new__(cls, symbol: str):
         self = object.__new__(cls)
         self._value_ = auto()

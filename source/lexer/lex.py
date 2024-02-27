@@ -1,19 +1,19 @@
 from tokens import Token, TokenType
-from .scanner import Scanner
+from scanner import Scanner
 from .tree import TokenTypeTree
 
 
 def lex(code: str) -> list[Token]:
     tokens = []
-    scanner = Scanner(code)
+    scanner = Scanner[str](code)
     symbol_tts = [tt for tt in list(TokenType) if tt.symbol is not None]
     symbol_tree = TokenTypeTree(list(symbol_tts), 0)
     while not scanner.done():
-        if scanner.char.isspace():
+        if scanner.peek.isspace():
             tt = lex_whitespace(scanner)
-        elif scanner.char.isdigit():
+        elif scanner.peek.isdigit():
             tt = lex_digits(scanner)
-        elif scanner.char.isalpha():
+        elif scanner.peek.isalpha():
             tt = lex_text(scanner)
         else:
             tt = symbol_tree.walk(scanner)
@@ -24,14 +24,14 @@ def lex(code: str) -> list[Token]:
 
 
 def lex_whitespace(scanner: Scanner) -> TokenType | None:
-    if scanner.char == '\n':
+    if scanner.peek == '\n':
         scanner.consume()
         return TokenType.NEW_LINE
     return scanner.discard()
 
 
 def lex_digits(scanner: Scanner) -> TokenType:
-    while scanner.char.isdigit():
+    while scanner.peek.isdigit():
         scanner.consume()
     return TokenType.NUMBER
 
