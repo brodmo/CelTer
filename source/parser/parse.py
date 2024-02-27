@@ -26,15 +26,25 @@ class Parser:
         ])
 
     def parse_expression(self) -> Element:
-        return self.parse_binary(self.parse_number())
+        return self.parse_binary(self.parse_number(), 0)
 
-    def parse_binary(self, lhs: Element) -> Element:
-        if self.scanner.peek.type not in (TokenType.PLUS, TokenType.MINUS):
-            return lhs
-        node = Node([
-            lhs, Leaf(self.scanner.consume()), self.parse_number()
-        ])
-        return self.parse_binary(node)
+    # https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method
+    def parse_binary(self, lhs: Element, precedence: int) -> Element:
+        def valid_operator(comp_precedence: int, equals_ok: bool):
+            lookahead_precedence = self.scanner.peek.type.precedence
+            return lookahead_precedence is not None and (
+                lookahead_precedence >= comp_precedence if equals_ok
+                else lookahead_precedence > comp_precedence
+            )
+        while valid_operator(precedence, equals_ok=True):
+            operator = self.scanner.consume()
+            rhs = self.parse_number()
+            op_precedence = operator.type.precedence
+            while valid_operator(op_precedence, equals_ok=False):  # or right associative
+                rhs = self.parse_binary(rhs, op_precedence + 1)  # + 0 if right associative
+                op_precedence = self.scanner.peek.type.precedence
+            lhs = Node([lhs, Leaf(operator), rhs])
+        return lhs
 
     def parse_number(self) -> Element:
         assert self.scanner.peek.type == TokenType.NUMBER

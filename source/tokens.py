@@ -3,29 +3,33 @@ from enum import Enum, auto
 
 
 class TokenType(Enum):
-    def __new__(cls, symbol: str):
+
+    def __new__(cls, symbol: str | None, precedence: int | None):
         self = object.__new__(cls)
         self._value_ = auto()
         self.symbol = symbol
+        self.precedence = precedence
         return self
 
-    NUMBER = None
-    IDENTIFIER = None
+    NUMBER = None, None
+    IDENTIFIER = None, None
 
     # whitespace
-    EOF = None
-    NEW_LINE = None
+    EOF = None, None
+    NEW_LINE = None, None
 
     # math
-    PLUS = '+'
-    MINUS = '-'
+    PLUS = '+', 5
+    MINUS = '-', 5
+    MUL = '*', 6
+    DIV = '/', 6
 
     # comp
-    STRICT_LESS = '<'
-    EQUAL_LESS = '<='
+    STRICT_LESS = '<', 10
+    EQUAL_LESS = '<=', 10
 
     # io
-    OUTPUT = '<<'
+    OUTPUT = '<<', None
 
 
 @dataclass(frozen=True)
