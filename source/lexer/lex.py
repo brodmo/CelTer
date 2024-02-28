@@ -5,7 +5,7 @@ from .tree import TokenTypeTree
 
 def lex(code: str) -> list[Token]:
     tokens = []
-    scanner = Scanner[str](code)
+    scanner = Scanner[str](code + '\n')
     symbol_tts = [tt for tt in list(TokenType) if tt.symbol is not None]
     symbol_tree = TokenTypeTree(list(symbol_tts), 0)
     while not scanner.done():
@@ -25,7 +25,8 @@ def lex(code: str) -> list[Token]:
 
 def lex_whitespace(scanner: Scanner) -> TokenType | None:
     if scanner.peek == '\n':
-        scanner.consume()
+        while not scanner.done() and scanner.peek == '\n':
+            scanner.consume()
         return TokenType.NEW_LINE
     return scanner.discard()
 

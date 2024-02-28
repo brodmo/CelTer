@@ -11,7 +11,11 @@ class Parser:
         self.scanner = Scanner[Token](tokens)
 
     def parse(self) -> Element:
-        return self.parse_line()
+        lines = []
+        while self._next_type != TokenType.EOF:
+            lines.append(self.parse_line())
+            assert self.scanner.consume().type == TokenType.NEW_LINE
+        return Node(lines)
 
     def parse_line(self) -> Element:
         if self.scanner.peek.type == TokenType.OUTPUT:
