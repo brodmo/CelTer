@@ -24,26 +24,21 @@ class Parser:
             self.parse_expression()
         ])
 
-    def parse_expression(self):
-        return self.parse_binary(self.parse_primary(), 0)
-
-    # https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method
-    def parse_binary(self, lhs: Element, precedence: int) -> Element:
-        def valid_operator(comp_precedence: int, equals_ok: bool):
-            lookahead_precedence = self.scanner.peek.type.precedence
-            return lookahead_precedence is not None and (
-                lookahead_precedence >= comp_precedence if equals_ok
-                else lookahead_precedence > comp_precedence
-            )
-        while valid_operator(precedence, equals_ok=True):
+    def parse_expression(self, precedence: int = 0) -> Element:
+        def valid_operator():
+            next_precedence = self._next_type.precedence
+            return next_precedence is not None and next_precedence >= precedence
+        left = self.parse_primary()
+        while valid_operator():
             operator = self.scanner.consume()
-            rhs = self.parse_primary()
-            op_precedence = operator.type.precedence
-            while valid_operator(op_precedence, equals_ok=False):  # or right associative
-                rhs = self.parse_binary(rhs, op_precedence + 1)  # + 0 if right associative
-                op_precedence = self.scanner.peek.type.precedence
-            lhs = Node([lhs, Leaf(operator), rhs])
-        return lhs
+            # pass same precedence for right associativity
+            right = self.parse_expression(operator.type.precedence + 1)
+            left = Node([left, Leaf(operator), right])
+        return left
+
+    @property
+    def _next_type(self) -> TokenType:
+        return self.scanner.peek.type
 
     def parse_primary(self) -> Element:
         if self.scanner.peek.type == TokenType.PAREN_OPEN:
