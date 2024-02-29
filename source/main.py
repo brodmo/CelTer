@@ -1,16 +1,15 @@
-from pathlib import Path
-
+from paths import SourceFile
 from lexer.lex import lex
 from parser.parse import Parser
-
-
-TEST_FILE = Path(__file__).parents[1] / 'data' / 'test.ter'
+from parser.tree import StringVisitor
 
 
 def main():
-    test_code = TEST_FILE.read_text()
-    tree = Parser(lex(test_code)).parse()
-    print(tree)
+    file = SourceFile('test')
+    test_code = file.base.read_text()
+    tokens = lex(test_code)
+    root = Parser(tokens).parse()
+    print(root.accept(StringVisitor()))
 
 
 if __name__ == '__main__':

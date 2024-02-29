@@ -4,36 +4,123 @@ from dataclasses import dataclass
 from tokens import Token
 
 
+def _assert_exclusive_choice(*args):
+    assert len(list(map(lambda arg: arg is not None, args))) == 1
+
+
 class Element(ABC):
+    def accept(self, visitor: 'Visitor'):
+        visitor.enter(self)
+        result = self._simple_accept(visitor)
+        visitor.exit(self)
+        return result
+
     @abstractmethod
-    def str_depth(self, depth: int):
+    def _simple_accept(self, visitor: 'Visitor'):
         pass
 
 
 @dataclass(frozen=True)
-class Node(Element):
-    children: list['Element']
+class Root(Element):
+    lines: list['Line']
 
-    def __str__(self):
-        def valid(line: str) -> bool:
-            return any(line) and not line.isspace()
-        lines = self.str_depth(0).split('\n')
-        return '\n'.join(filter(valid, lines))
-
-    def str_depth(self, depth: int):
-        prefix = '\n' + depth * '    '
-        return ''.join(
-            prefix + child.str_depth(depth + 1)
-            for child in self.children
-        )
+    def _simple_accept(self, visitor: 'Visitor'):
+        return visitor.visit_root(self)
 
 
 @dataclass(frozen=True)
-class Leaf(Element):
-    token: Token
+class Line(Element):
+    line_content: 'LineContent'
+    new_line_token: Token
 
-    def __str__(self):
-        return str(self.token)
+    def _simple_accept(self, visitor: 'Visitor'):
+        return self.line_content.accept(visitor)
 
-    def str_depth(self, depth: int):
-        return str(self.token)
+
+class LineContent(Element, ABC):
+    pass
+
+
+@dataclass(frozen=True)
+class Output(LineContent):
+    output_token: Token
+    expression: 'Expression'
+
+    def _simple_accept(self, visitor: 'Visitor'):
+        return visitor.visit_output(self)
+
+
+class Expression(LineContent, ABC):
+    pass
+
+
+@dataclass(frozen=True)
+class ParenExpression(Expression):
+    paren_open_token: Token
+    expression: Expression
+    paren_close_token: Token
+
+    def _simple_accept(self, visitor: 'Visitor'):
+        return self.expression.accept(visitor)
+
+
+@dataclass(frozen=True)
+class Binary(Expression):
+    left: Expression
+    op_token: Token
+    right: Expression
+
+    def _simple_accept(self, visitor: 'Visitor'):
+        return visitor.visit_binary(self)
+
+
+@dataclass(frozen=True)
+class Number(Expression):
+    number_token: Token
+
+    def _simple_accept(self, visitor: 'Visitor'):
+        return visitor.visit_number(self)
+
+
+class Visitor[T](ABC):
+
+    def enter(self, element: Element):
+        pass
+
+    def exit(self, element: Element):
+        pass
+
+    def visit_root(self, root: Root) -> T:
+        for line in root.lines:
+            line.accept(self)
+        return None
+
+    def visit_output(self, output: Output) -> T:
+        output.expression.accept(self)
+        return None
+
+    def visit_binary(self, binary: Binary) -> T:
+        binary.left.accept(self)
+        binary.right.accept(self)
+        return None
+
+    def visit_number(self, number: Number) -> T:
+        return None
+
+
+class StringVisitor(Visitor[str]):
+
+    def visit_root(self, root: Root) -> str:
+        return ''.join(
+            line.accept(self) + line.new_line_token.text
+            for line in root.lines
+        )
+
+    def visit_output(self, output: Output) -> str:
+        return output.output_token.text + ' ' + output.expression.accept(self)
+
+    def visit_binary(self, binary: Binary) -> str:
+        return f'({binary.left.accept(self)} {binary.op_token.text} {binary.right.accept(self)})'
+
+    def visit_number(self, number: Number) -> str:
+        return number.number_token.text
