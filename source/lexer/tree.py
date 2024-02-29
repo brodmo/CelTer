@@ -1,5 +1,5 @@
-from tokens import TokenType
 from scanner import Scanner
+from tokens import TokenType
 
 
 class TokenTypeTree:

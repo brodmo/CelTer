@@ -1,7 +1,6 @@
-from tokens import Token, TokenType
-from .tree import Root, Line, Output, Expression, ParenExpression, Binary, Number
-
 from scanner import Scanner
+from tokens import Token, TokenType
+from .tree import Binary, Expression, Line, Number, Output, ParenExpression, Root
 
 
 class Parser:

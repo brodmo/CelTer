@@ -1,5 +1,6 @@
-from pathlib import Path
 import subprocess as sp
+from pathlib import Path
+
 from paths import SourceFile
 
 

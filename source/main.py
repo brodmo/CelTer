@@ -1,8 +1,8 @@
-from paths import SourceFile
+from compiler.compile import LlvmIrGenerator
 from lexer.lex import lex
 from parser.parse import Parser
 from parser.tree import StringVisitor
-from compiler.compile import LlvmIrGenerator
+from paths import SourceFile
 from runner.run import run
 
 

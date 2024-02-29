@@ -1,5 +1,6 @@
 from llvmlite import ir
-from parser.tree import Visitor, Root, Output, Binary, Number
+
+from parser.tree import Binary, Number, Output, Root, Visitor
 from tokens import TokenType
 
 
