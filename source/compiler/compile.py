@@ -1,10 +1,10 @@
 from llvmlite import ir
 
-from parser.tree import Binary, Number, Output, Root, Visitor
+from parser.tree import Binary, Number, Output, StatementBlock, Visitor
 from tokens import TokenType
 
 
-class LlvmIrGenerator(Visitor[ir.values.Value]):
+class LlvmIrGenerator(Visitor[ir.Module]):
     def __init__(self):
         self.integer = ir.IntType(64)
         self.module = ir.Module(name=__file__)
@@ -12,11 +12,11 @@ class LlvmIrGenerator(Visitor[ir.values.Value]):
         block = self.func.append_basic_block()
         self.builder = ir.IRBuilder(block)
 
-    def visit_root(self, root: Root) -> ir.values.Value:
+    def visit_statement_block(self, root: StatementBlock) -> ir.Module:
         for line in root.lines:
             line.accept(self)
         self.builder.ret(self.integer(0))
-        return self.func
+        return self.module
 
     def visit_output(self, output: Output) -> ir.values.Value:
         return printf(self.builder, "%d\n", output.expression.accept(self))
@@ -46,8 +46,8 @@ voidptr_t = ir.IntType(8).as_pointer()
 
 # https://github.com/numba/numba/blob/c699ef8679316f40af8d0678219fa197522a741f/numba/cgutils.py#L975
 def printf(builder: ir.IRBuilder, format_: str, *args):
-    fmt_bytes = make_bytearray((format_ + '\00').encode('ascii'))
-    fmt_ptr = builder.alloca(fmt_bytes.type)  # no idea if this is needed
+    fmt_bytes = make_bytearray((format_ + '\0').encode('ascii'))
+    fmt_ptr = builder.alloca(fmt_bytes.type)
     builder.store(fmt_bytes, fmt_ptr)
     try:
         fn = builder.module.get_global('printf')

@@ -4,10 +4,6 @@ from dataclasses import dataclass
 from tokens import Token
 
 
-def _assert_exclusive_choice(*args):
-    assert len(list(map(lambda arg: arg is not None, args))) == 1
-
-
 class Element(ABC):
     def accept(self, visitor: 'Visitor'):
         visitor.enter(self)
@@ -21,15 +17,15 @@ class Element(ABC):
 
 
 @dataclass(frozen=True)
-class Root(Element):
-    lines: list['Line']
+class StatementBlock(Element):
+    lines: list['Statement']
 
     def _simple_accept(self, visitor: 'Visitor'):
-        return visitor.visit_root(self)
+        return visitor.visit_statement_block(self)
 
 
 @dataclass(frozen=True)
-class Line(Element):
+class Statement(Element):
     line_content: 'LineContent'
     new_line_token: Token
 
@@ -82,7 +78,10 @@ class Number(Expression):
         return visitor.visit_number(self)
 
 
-class Visitor[T](ABC):
+class Visitor[T](ABC):  # typing is a huge mess
+
+    def visit_root(self, root: StatementBlock) -> T:
+        return self.visit_statement_block(root)
 
     def enter(self, element: Element):
         pass
@@ -90,37 +89,56 @@ class Visitor[T](ABC):
     def exit(self, element: Element):
         pass
 
-    def visit_root(self, root: Root) -> T:
-        for line in root.lines:
+    def visit_statement_block(self, statement_block: StatementBlock):
+        for line in statement_block.lines:
             line.accept(self)
         return None
 
-    def visit_output(self, output: Output) -> T:
+    def visit_output(self, output: Output):
         output.expression.accept(self)
         return None
 
-    def visit_binary(self, binary: Binary) -> T:
+    def visit_binary(self, binary: Binary):
         binary.left.accept(self)
         binary.right.accept(self)
         return None
 
-    def visit_number(self, number: Number) -> T:
+    def visit_number(self, number: Number):
         return None
 
 
 class StringVisitor(Visitor[str]):
+    def __init__(self):
+        self._string = ''
+        self._depth = 0
 
-    def visit_root(self, root: Root) -> str:
-        return ''.join(
-            line.accept(self) + line.new_line_token.text
-            for line in root.lines
-        )
+    def _format(self, *tokens: Token):
+        self._string += self._depth * '  ' + ''.join(str(tok) + '\n' for tok in tokens)
 
-    def visit_output(self, output: Output) -> str:
-        return output.output_token.text + ' ' + output.expression.accept(self)
+    def visit_root(self, root: StatementBlock) -> str:
+        self.visit_statement_block(root)
+        return self._string
 
-    def visit_binary(self, binary: Binary) -> str:
-        return f'({binary.left.accept(self)} {binary.op_token.text} {binary.right.accept(self)})'
+    def enter(self, _):
+        self._depth += 1
 
-    def visit_number(self, number: Number) -> str:
-        return number.number_token.text
+    def exit(self, _):
+        self._depth -= 1
+
+    def visit_statement_block(self, root: StatementBlock):
+        for line in root.lines:
+            line.accept(self)
+            self._format(line.new_line_token)
+            self._string += '\n\n'
+
+    def visit_output(self, output: Output):
+        self._format(output.output_token)
+        output.expression.accept(self)
+
+    def visit_binary(self, binary: Binary):
+        binary.left.accept(self)
+        self._format(binary.op_token)
+        binary.right.accept(self)
+
+    def visit_number(self, number: Number):
+        self._format(number.number_token)

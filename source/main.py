@@ -10,10 +10,10 @@ def main():
     file = SourceFile('test')
     test_code = file.base.read_text()
     tokens = lex(test_code)
-    root = Parser(tokens).parse()
-    print(root.accept(StringVisitor()))
-    func = root.accept(LlvmIrGenerator())
-    file.ll.write_text('\n'.join(func.module._get_body_lines()))  # no metadata for now
+    block = Parser(tokens).parse_statement_block()
+    print(StringVisitor().visit_root(block))
+    module = LlvmIrGenerator().visit_root(block)
+    file.ll.write_text('\n'.join(module._get_body_lines()))  # beware, no metadata
     run(file)
 
 

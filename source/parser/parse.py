@@ -1,6 +1,6 @@
 from scanner import Scanner
 from tokens import Token, TokenType
-from .tree import Binary, Expression, Line, Number, Output, ParenExpression, Root
+from .tree import Binary, Expression, Number, Output, ParenExpression, Statement, StatementBlock
 
 
 class Parser:
@@ -9,19 +9,19 @@ class Parser:
     def __init__(self, tokens: list[Token]):
         self.scanner = Scanner[Token](tokens)
 
-    def parse(self) -> Root:
+    def parse_statement_block(self) -> StatementBlock:
         lines = []
         while self._next_type != TokenType.EOF:
-            lines.append(self.parse_line())
-        return Root(lines)
+            lines.append(self.parse_statement())
+        return StatementBlock(lines)
 
-    def parse_line(self) -> Line:
+    def parse_statement(self) -> Statement:
         if self.scanner.peek.type == TokenType.OUTPUT:
             content = self.parse_output()
         else:
             content = self.parse_expression()
         assert self.scanner.peek.type == TokenType.NEW_LINE
-        return Line(content, self.scanner.consume())
+        return Statement(content, self.scanner.consume())
 
     def parse_output(self) -> Output:
         return Output(self.scanner.consume(), self.parse_expression())
